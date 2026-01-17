@@ -1,0 +1,21 @@
+# Required dependencies
+# IMPORTANT: py-clob-client requires Python 3.9 or higher!
+# If you have Python 3.8 or lower, please upgrade to Python 3.9+
+
+# Core dependencies (install these first)
+python-dotenv>=1.0.0
+httpx
+eth-account>=0.13.0
+eth-utils>=4.1.1
+
+# py-clob-client and its dependencies
+# Note: These packages may not all be on PyPI and may need to be installed from GitHub
+# Try: pip install git+https://github.com/Polymarket/py-clob-client.git
+py-clob-client>=0.34.5
+
+# Optional dependencies (for Telegram notifications)
+python-telegram-bot>=20.0
+
+# Optional dependencies (for timezone handling - one of these is recommended)
+pytz>=2023.3
+# zoneinfo is included in Python 3.9+, no need to install separately

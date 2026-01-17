@@ -1,0 +1,56 @@
+================================================================================
+IMPORTANT: PYTHON VERSION REQUIREMENT
+================================================================================
+
+Your current Python version: 3.8.2
+
+REQUIRED: Python 3.9 or higher
+
+The py-clob-client package requires Python 3.9+. It will NOT work with Python 3.8.
+
+================================================================================
+HOW TO UPGRADE PYTHON
+================================================================================
+
+Option 1: Download from Python.org (Recommended)
+------------------------------------------------
+1. Go to: https://www.python.org/downloads/
+2. Download Python 3.9 or higher (3.10 or 3.11 recommended)
+3. Run the installer
+4. Make sure to check "Add Python to PATH" during installation
+5. Verify: Open a new terminal and run: python --version
+
+Option 2: Use pyenv (Advanced)
+-------------------------------
+1. Install pyenv: https://github.com/pyenv/pyenv
+2. Install Python 3.9+: pyenv install 3.10.0
+3. Set as local version: pyenv local 3.10.0
+
+================================================================================
+AFTER UPGRADING PYTHON
+================================================================================
+
+1. Verify the new version:
+   python --version
+
+2. Install dependencies:
+   - Windows: Double-click install_dependencies.bat
+   - Or run: python setup.py
+
+3. Create .env file:
+   - Copy env.template to .env
+   - Fill in your credentials
+
+4. Run the bot:
+   python Cornels_Cryptobot.py
+
+================================================================================
+NOTE
+================================================================================
+
+If you have multiple Python versions installed, make sure you're using the
+correct one. You may need to use:
+- python3.9 or python3.10 instead of python
+- Or create a virtual environment with the correct version
+
+================================================================================
