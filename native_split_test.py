@@ -18,6 +18,11 @@ Optional:
 
 Run:
     python native_split_test.py
+
+Note: If you get ModuleNotFoundError in VS Code Debug Console:
+- Select the correct Python interpreter: Ctrl+Shift+P > "Python: Select Interpreter"
+- Or run in VS Code terminal instead: Ctrl+` then run the script
+- See VS_CODE_SETUP.md for details
 """
 
 import os
