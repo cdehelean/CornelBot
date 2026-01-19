@@ -214,46 +214,65 @@ def split_position_native(condition_id: str):
     if not contracts:
         raise RuntimeError(f"No contract config for chain_id {chain_id}")
 
-    # USDC 6 decimals
+    # USDC 6 decimals - convert USD to wei (6 decimals)
+    # $5 = 5 * 10^6 = 5,000,000 (6 decimals for USDC)
     amount = int(amount_usd * 1_000_000)
     parent_collection = "0x" + "00" * 32
     partition = [1, 2]
+    
+    print(f"Split parameters:")
+    print(f"  Condition ID: {condition_id}")
+    print(f"  Amount: {amount:,} (${amount_usd:.2f} USD)")
+    print(f"  Partition: {partition}")
+    print(f"  Parent collection: {parent_collection}")
 
     w3 = build_web3()
     
     # Use retry logic for RPC calls
-    print("Fetching nonce and gas price...")
+    print("Fetching nonce and gas fees...")
     nonce = rpc_call_with_retry(w3, w3.eth.get_transaction_count, address)
-    gas_price = rpc_call_with_retry(w3, lambda: w3.eth.gas_price)
+    
+    # Polygon uses EIP-1559, so we need maxFeePerGas and maxPriorityFeePerGas
+    try:
+        fee_history = rpc_call_with_retry(w3, w3.eth.fee_history, 1, "latest")
+        base_fee = fee_history["baseFeePerGas"][0]
+        # Use a multiplier for priority fee (1.5x base fee as priority, or minimum 30 gwei)
+        priority_fee = max(int(base_fee * 1.5), 30_000_000_000)  # 30 gwei minimum
+        max_fee = base_fee + priority_fee
+    except Exception as e:
+        print(f"⚠️  Could not fetch fee history, using fallback gas pricing: {e}")
+        # Fallback to legacy gas price if EIP-1559 fails
+        gas_price = rpc_call_with_retry(w3, lambda: w3.eth.gas_price)
+        max_fee = gas_price
+        priority_fee = int(gas_price * 0.1)  # 10% of gas price as priority
 
+    # Build transaction with EIP-1559 gas pricing (Polygon standard)
+    tx_params = {
+        "chainId": chain_id,
+        "gas": 1_000_000,
+        "maxFeePerGas": max_fee,
+        "maxPriorityFeePerGas": priority_fee,
+        "from": address,
+        "nonce": nonce,
+    }
+    
     if is_neg_risk:
         contract = w3.eth.contract(
             address=contracts.neg_risk_adapter, abi=NegRiskAdapterABI
         )
-        tx = contract.functions.splitPosition(condition_id, amount).build_transaction(
-            {
-                "chainId": chain_id,
-                "gas": 1_000_000,
-                "gasPrice": gas_price,
-                "from": address,
-                "nonce": nonce,
-            }
-        )
+        tx = contract.functions.splitPosition(condition_id, amount).build_transaction(tx_params)
     else:
         contract = w3.eth.contract(
             address=contracts.conditional_tokens, abi=ConditionalTokenABI
         )
         tx = contract.functions.splitPosition(
             contracts.collateral, parent_collection, condition_id, partition, amount
-        ).build_transaction(
-            {
-                "chainId": chain_id,
-                "gas": 1_000_000,
-                "gasPrice": gas_price,
-                "from": address,
-                "nonce": nonce,
-            }
-        )
+        ).build_transaction(tx_params)
+    
+    print(f"Transaction parameters:")
+    print(f"  Gas limit: {tx_params['gas']}")
+    print(f"  Max fee per gas: {max_fee / 1e9:.2f} gwei")
+    print(f"  Max priority fee: {priority_fee / 1e9:.2f} gwei")
 
     signed = w3.eth.account.sign_transaction(tx, private_key=pk)
     tx_hash = w3.to_hex(w3.keccak(signed.raw_transaction))
