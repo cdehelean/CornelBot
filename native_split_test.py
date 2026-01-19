@@ -169,7 +169,16 @@ def split_position_native(condition_id: str):
     amount_usd = float(os.getenv("AMOUNT_USD", "5"))
 
     if not address or not pk:
-        raise RuntimeError("ADDRESS and PK are required in environment.")
+        error_msg = "ADDRESS and PK are required in environment.\n\n"
+        error_msg += "Please add them to your .env file:\n"
+        error_msg += "  1. Copy 'env.template' to '.env' if you haven't already\n"
+        error_msg += "  2. Add these lines to your .env file:\n"
+        error_msg += "     ADDRESS=your_wallet_address_here\n"
+        error_msg += "     PK=your_private_key_here\n"
+        error_msg += "     RPC_URL=https://polygon-rpc.com\n"
+        if not os.path.exists(".env"):
+            error_msg += "\n  Note: .env file not found. Create it from env.template\n"
+        raise RuntimeError(error_msg)
 
     contracts = get_contract_config(chain_id)
     if not contracts:
@@ -225,6 +234,55 @@ def main():
     print("=" * 80)
     print("Native Split Position Test")
     print("=" * 80)
+    print()
+
+    # Check if .env file exists
+    if not os.path.exists(".env"):
+        print("⚠️  WARNING: .env file not found!")
+        print()
+        print("Please create a .env file:")
+        print("  1. Copy 'env.template' to '.env'")
+        print("  2. Fill in your credentials (ADDRESS, PK, RPC_URL, etc.)")
+        print()
+        print("Required variables for native split test:")
+        print("  - ADDRESS: Your wallet address")
+        print("  - PK: Your private key")
+        print("  - RPC_URL: Polygon RPC endpoint (e.g., https://polygon-rpc.com)")
+        print()
+        response = input("Continue anyway? (y/n): ").strip().lower()
+        if response != 'y':
+            print("Exiting. Please set up your .env file first.")
+            return
+        print()
+
+    # Check required environment variables
+    address = os.getenv("ADDRESS")
+    pk = os.getenv("PK")
+    rpc_url = os.getenv("RPC_URL")
+
+    missing = []
+    if not address:
+        missing.append("ADDRESS")
+    if not pk:
+        missing.append("PK")
+    if not rpc_url:
+        missing.append("RPC_URL")
+
+    if missing:
+        print("❌ ERROR: Missing required environment variables:")
+        for var in missing:
+            print(f"   - {var}")
+        print()
+        print("Please add them to your .env file:")
+        print("  ADDRESS=your_wallet_address_here")
+        print("  PK=your_private_key_here")
+        print("  RPC_URL=https://polygon-rpc.com")
+        print()
+        print("Then restart the script.")
+        return
+
+    print("✓ Environment variables loaded")
+    print()
 
     default_url = get_eastern_time_slug()
     print(f"Proposed URL: {default_url}")
