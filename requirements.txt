@@ -7,6 +7,7 @@ python-dotenv>=1.0.0
 httpx
 eth-account>=0.13.0
 eth-utils>=4.1.1
+web3>=6.0.0
 
 # py-clob-client and its dependencies
 # Note: These packages may not all be on PyPI and may need to be installed from GitHub
