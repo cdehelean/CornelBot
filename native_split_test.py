@@ -28,6 +28,7 @@ Note: If you get ModuleNotFoundError in VS Code Debug Console:
 import os
 import re
 import json
+import time
 import urllib.request
 from typing import Optional
 
@@ -160,6 +161,35 @@ def build_web3() -> Web3:
     return w3
 
 
+def rpc_call_with_retry(w3, func, *args, max_retries=5, initial_delay=10, **kwargs):
+    """Execute RPC call with retry logic for rate limits."""
+    for attempt in range(max_retries):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            error_str = str(e)
+            # Check if it's a rate limit error
+            if "rate limit" in error_str.lower() or "too many requests" in error_str.lower():
+                # Try to extract retry time from error message
+                retry_time = initial_delay
+                if "retry in" in error_str.lower():
+                    import re
+                    match = re.search(r"retry in (\d+)s?", error_str.lower())
+                    if match:
+                        retry_time = int(match.group(1))
+                
+                if attempt < max_retries - 1:
+                    print(f"⚠️  Rate limit hit. Waiting {retry_time} seconds before retry {attempt + 1}/{max_retries}...")
+                    time.sleep(retry_time)
+                    continue
+                else:
+                    raise RuntimeError(f"Rate limit error after {max_retries} retries: {error_str}")
+            else:
+                # Not a rate limit error, re-raise immediately
+                raise
+    raise RuntimeError(f"Failed after {max_retries} attempts")
+
+
 def split_position_native(condition_id: str):
     """Perform native splitPosition for the given condition_id."""
     address = os.getenv("ADDRESS")
@@ -190,8 +220,11 @@ def split_position_native(condition_id: str):
     partition = [1, 2]
 
     w3 = build_web3()
-    nonce = w3.eth.get_transaction_count(address)
-    gas_price = w3.eth.gas_price
+    
+    # Use retry logic for RPC calls
+    print("Fetching nonce and gas price...")
+    nonce = rpc_call_with_retry(w3, w3.eth.get_transaction_count, address)
+    gas_price = rpc_call_with_retry(w3, lambda: w3.eth.gas_price)
 
     if is_neg_risk:
         contract = w3.eth.contract(
@@ -224,10 +257,17 @@ def split_position_native(condition_id: str):
 
     signed = w3.eth.account.sign_transaction(tx, private_key=pk)
     tx_hash = w3.to_hex(w3.keccak(signed.raw_transaction))
-    sent = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(sent, timeout=600)
-    print(f"splitPosition sent: {tx_hash}")
-    print(f"status: {receipt.status}, gasUsed: {receipt.gas_used}")
+    
+    print(f"Transaction hash: {tx_hash}")
+    print("Sending transaction...")
+    sent = rpc_call_with_retry(w3, w3.eth.send_raw_transaction, signed.raw_transaction)
+    
+    print("Waiting for transaction receipt...")
+    receipt = rpc_call_with_retry(w3, w3.eth.wait_for_transaction_receipt, sent, timeout=600)
+    
+    print(f"✅ splitPosition successful!")
+    print(f"   Transaction hash: {tx_hash}")
+    print(f"   Status: {receipt.status}, Gas used: {receipt.gasUsed}")
 
 
 def main():
