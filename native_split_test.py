@@ -34,7 +34,7 @@ from typing import Optional
 from dataclasses import dataclass
 from dotenv import load_dotenv
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 
 load_dotenv()
 
@@ -156,7 +156,7 @@ def build_web3() -> Web3:
     if not rpc_url:
         raise RuntimeError("RPC_URL is required in environment.")
     w3 = Web3(Web3.HTTPProvider(rpc_url))
-    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+    w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
     return w3
 
 
