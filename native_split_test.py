@@ -223,11 +223,11 @@ def split_position_native(condition_id: str):
         )
 
     signed = w3.eth.account.sign_transaction(tx, private_key=pk)
-    tx_hash = w3.to_hex(w3.keccak(signed.rawTransaction))
-    sent = w3.eth.send_raw_transaction(signed.rawTransaction)
+    tx_hash = w3.to_hex(w3.keccak(signed.raw_transaction))
+    sent = w3.eth.send_raw_transaction(signed.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(sent, timeout=600)
     print(f"splitPosition sent: {tx_hash}")
-    print(f"status: {receipt.status}, gasUsed: {receipt.gasUsed}")
+    print(f"status: {receipt.status}, gasUsed: {receipt.gas_used}")
 
 
 def main():
